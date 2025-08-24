@@ -6,17 +6,15 @@ import requests
 from bs4 import BeautifulSoup
 import io
 import csv
-from datetime import date # <-- Add this import
+from datetime import date
+import os # <-- Make sure this import is here
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'a_super_secret_key_that_is_hard_to_guess'
 bcrypt = Bcrypt(app)
 
 # --- DATABASE CONFIGURATION ---
-# IMPORTANT: Make sure your password is correct
-import os
-
-# Check if we are running on PythonAnywhere's server
+# This code smartly chooses which database to use
 if 'PYTHONANYWHERE_HOSTNAME' in os.environ:
     # On PythonAnywhere, use SQLite
     db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fintrack.db')
@@ -77,17 +75,11 @@ def home():
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
     current_user = User.query.get(session['user_id'])
     user_assets = Asset.query.filter_by(user_id=session['user_id']).all()
-    
     total_portfolio_value = 0
     total_invested_value = 0
     enriched_assets = []
-    
-    # Dictionary to hold the total value for each asset type for the chart
-    asset_allocation = {}
-
     gold_price_per_gram = get_gold_price()
     mf_navs = {}
     try:
@@ -111,7 +103,6 @@ def dashboard():
         is_live_price = False
         invested_value = asset.quantity * asset.purchase_price
         current_value = invested_value
-
         if asset.asset_type == 'STOCK' and asset.ticker_symbol:
             try:
                 stock_data = yf.Ticker(asset.ticker_symbol)
@@ -122,18 +113,15 @@ def dashboard():
                     is_live_price = True
             except Exception as e:
                 print(f"Could not fetch stock price for {asset.ticker_symbol}: {e}")
-        
         elif asset.asset_type == 'GOLD':
             if gold_price_per_gram > 0:
                 current_value = asset.quantity * gold_price_per_gram
                 is_live_price = True
-        
         elif asset.asset_type == 'MF' and asset.ticker_symbol:
             nav = mf_navs.get(asset.ticker_symbol.strip())
             if nav:
                 current_value = asset.quantity * nav
                 is_live_price = True
-        
         elif asset.asset_type == 'FD':
             principal = asset.quantity
             interest_rate = asset.purchase_price / 100
@@ -145,36 +133,22 @@ def dashboard():
         
         total_portfolio_value += current_value
         total_invested_value += invested_value
-        
-        # Add the current value to our asset allocation dictionary
-        asset_allocation[asset.asset_type] = asset_allocation.get(asset.asset_type, 0) + current_value
-        
         enriched_assets.append({
             'db_asset': asset,
             'current_value': round(current_value, 2),
             'invested_value': round(invested_value, 2),
             'is_live': is_live_price
         })
-
     overall_gain_loss = total_portfolio_value - total_invested_value
-    
-    # Prepare data for Chart.js
-    chart_labels = list(asset_allocation.keys())
-    chart_data = list(asset_allocation.values())
-
     return render_template(
         'dashboard.html', 
         current_user=current_user, 
         assets=enriched_assets, 
         total_value=round(total_portfolio_value, 2),
         total_invested=round(total_invested_value, 2),
-        gain_loss=round(overall_gain_loss, 2),
-        chart_labels=chart_labels, # Pass chart labels to template
-        chart_data=chart_data      # Pass chart data to template
+        gain_loss=round(overall_gain_loss, 2)
     )
 
-
-# (The rest of your routes: signup, login, add_asset, etc. remain the same)
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -252,5 +226,4 @@ def delete_asset(asset_id):
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
-
-
+    
