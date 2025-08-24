@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Asset - FinTrack{% endblock %}
+
+{% block content %}
+    <article>
+        <header><h2>Edit Asset</h2></header>
+        <form method="POST">
+            <label for="asset_name">Asset Name:</label>
+            <input type="text" id="asset_name" name="asset_name" value="{{ asset.asset_name }}" required>
+
+            <label for="asset_type">Asset Type:</label>
+            <select id="asset_type" name="asset_type">
+                <option value="STOCK" {% if asset.asset_type == 'STOCK' %}selected{% endif %}>Stock</option>
+                <option value="MF" {% if asset.asset_type == 'MF' %}selected{% endif %}>Mutual Fund</option>
+                <option value="GOLD" {% if asset.asset_type == 'GOLD' %}selected{% endif %}>Gold</option>
+                <option value="FD" {% if asset.asset_type == 'FD' %}selected{% endif %}>Fixed Deposit</option>
+            </select>
+
+            <label for="ticker_symbol">Ticker Symbol (if stock):</label>
+            <input type="text" id="ticker_symbol" name="ticker_symbol" value="{{ asset.ticker_symbol or '' }}">
+
+            <label for="quantity">Quantity:</label>
+            <input type="number" step="any" id="quantity" name="quantity" value="{{ asset.quantity }}" required>
+
+            <label for="purchase_price">Purchase Price (per unit):</label>
+            <input type="number" step="any" id="purchase_price" name="purchase_price" value="{{ asset.purchase_price }}" required>
+
+            <label for="purchase_date">Purchase Date:</label>
+            <input type="date" id="purchase_date" name="purchase_date" value="{{ asset.purchase_date.strftime('%Y-%m-%d') }}" required>
+
+            <button type="submit">Save Changes</button>
+        </form>
+        <footer>
+            <a href="{{ url_for('dashboard') }}" class="secondary">Cancel</a>
+        </footer>
+    </article>
+{% endblock %}

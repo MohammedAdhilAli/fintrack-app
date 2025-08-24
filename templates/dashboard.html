@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Your Dashboard - FinTrack{% endblock %}
+
+{% block content %}
+    <nav>
+      <ul>
+        <li><strong>FinTrack</strong></li>
+      </ul>
+      <ul>
+        <li>Welcome, {{ current_user.email }}!</li>
+        <li><a href="/logout" role="button" class="secondary outline">Logout</a></li>
+      </ul>
+    </nav>
+
+    <!-- Summary Section -->
+    <article>
+        <header><strong>Portfolio Summary</strong></header>
+        <p><strong>Total Portfolio Value:</strong> ₹{{ total_value }}</p>
+        <p><strong>Total Invested:</strong> ₹{{ total_invested }}</p>
+        <p>
+            <strong>Overall Gain/Loss:</strong>
+            {% if gain_loss >= 0 %}
+                <strong style="color: green;">+₹{{ gain_loss }}</strong>
+            {% else %}
+                <strong style="color: red;">₹{{ gain_loss }}</strong>
+            {% endif %}
+        </p>
+    </article>
+
+    <!-- Assets Table Section -->
+    <article>
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Your Assets</h2>
+                <a href="/add_asset" role="button" style="width: auto;">Add New Asset</a>
+            </div>
+        </header>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Asset Name</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Purchase Price</th>
+                        <th scope="col">Total Invested</th>
+                        <th scope="col">Purchase Date</th>
+                        <th scope="col">Live Price</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset_data in assets %}
+                    <tr>
+                        <td>{{ asset_data.db_asset.asset_name }}</td>
+                        <td>{{ asset_data.db_asset.asset_type }}</td>
+                        <td>{{ asset_data.db_asset.quantity }}</td>
+                        <td>{{ asset_data.db_asset.purchase_price }}</td>
+                        <td>₹{{ asset_data.invested_value }}</td>
+                        <td>{{ asset_data.db_asset.purchase_date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if asset_data.is_live %}
+                                ₹{{ asset_data.current_value }}
+                            {% else %}
+                                Not Available
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('edit_asset', asset_id=asset_data.db_asset.id) }}" style="margin-right: 0.5rem;">Edit</a>
+                            <form action="{{ url_for('delete_asset', asset_id=asset_data.db_asset.id) }}" method="POST" style="margin:0; display: inline;">
+                                <button type="submit" class="secondary outline" onclick="return confirm('Are you sure you want to delete this asset?');" style="padding: 2px 8px; margin: 0; font-size: 0.8rem;">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    <!-- Chart Section -->
+    <article>
+        <!-- ADDED STYLE TO CENTER THE HEADER TEXT -->
+        <header style="text-align: center;"><strong>Asset Allocation</strong></header>
+        <div style="max-width: 450px; margin: auto;">
+             <canvas id="allocationChart"></canvas>
+        </div>
+    </article>
+
+    <!-- Chart.js Library and Script -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('allocationChart');
+        const labels = {{ chart_labels | tojson }};
+        const data = {{ chart_data | tojson }};
+
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Value (₹)',
+                    data: data,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+    </script>
+{% endblock %}

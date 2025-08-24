@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Add Asset - FinTrack{% endblock %}
+
+{% block content %}
+    <article>
+        <header><h2>Add a New Asset</h2></header>
+        <form method="POST" action="/add_asset">
+            <label for="asset_name">Asset Name</label>
+            <input type="text" id="asset_name" name="asset_name" required>
+
+            <label for="asset_type">Asset Type</label>
+            <select id="asset_type" name="asset_type">
+                <option value="STOCK">Stock</option>
+                <option value="MF">Mutual Fund</option>
+                <option value="GOLD">Gold</option>
+                <option value="FD">Fixed Deposit</option>
+            </select>
+
+            <label for="ticker_symbol">Ticker Symbol / Scheme Code</label>
+            <input type="text" id="ticker_symbol" name="ticker_symbol">
+            <!-- NEW HELPER TEXT AND LINKS -->
+            <small>
+                For Stocks, find the ticker on <a href="https://www.moneycontrol.com/" target="_blank">Moneycontrol</a> (e.g., TATAMOTORS.NS).<br>
+                For Mutual Funds, find the <strong>Scheme Code</strong> on <a href="https://www.amfiindia.com/nav-history-download" target="_blank">AMFI</a> (e.g., 118338).
+            </small>
+
+            <label for="quantity">Quantity</label>
+            <input type="number" step="any" id="quantity" name="quantity" required>
+
+            <label for="purchase_price">Purchase Price (per unit)</label>
+            <input type="number" step="any" id="purchase_price" name="purchase_price" required>
+
+            <label for="purchase_date">Purchase Date</label>
+            <input type="date" id="purchase_date" name="purchase_date" required>
+
+            <button type="submit">Add Asset</button>
+        </form>
+        <footer>
+            <a href="{{ url_for('dashboard') }}" class="secondary">Cancel</a>
+        </footer>
+    </article>
+{% endblock %}
