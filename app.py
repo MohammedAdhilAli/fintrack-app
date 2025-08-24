@@ -69,7 +69,7 @@ def sw():
 
 @app.route('/')
 def home():
-    return "Welcome to FinTrack! Go to /signup to create an account or /login to sign in."
+    return render_template('home.html')
 
 @app.route('/dashboard')
 def dashboard():
@@ -226,4 +226,3 @@ def delete_asset(asset_id):
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
-    

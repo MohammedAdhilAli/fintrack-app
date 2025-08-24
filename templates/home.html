@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - FinTrack{% endblock %}
+
+{% block content %}
+    <article style="text-align: center; margin-top: 5rem;">
+        <header>
+            <h1>Welcome to FinTrack</h1>
+            <p>Your personal, private portfolio tracker.</p>
+        </header>
+        <div class="grid">
+            <div>
+                <a href="{{ url_for('login') }}" role="button">Login</a>
+            </div>
+            <div>
+                <a href="{{ url_for('signup') }}" role="button" class="secondary">Sign Up</a>
+            </div>
+        </div>
+    </article>
+{% endblock %}
