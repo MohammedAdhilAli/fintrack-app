@@ -14,7 +14,17 @@ bcrypt = Bcrypt(app)
 
 # --- DATABASE CONFIGURATION ---
 # IMPORTANT: Make sure your password is correct
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Adhil%401@localhost:5432/fintrack_db'
+import os
+
+# Check if we are running on PythonAnywhere's server
+if 'PYTHONANYWHERE_HOSTNAME' in os.environ:
+    # On PythonAnywhere, use SQLite
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fintrack.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+else:
+    # On your local computer, use PostgreSQL
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Adhil%401@localhost:5432/fintrack_db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
