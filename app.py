@@ -1,4 +1,3 @@
-from whitenoise import WhiteNoise
 import yfinance as yf
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -8,18 +7,21 @@ from bs4 import BeautifulSoup
 import io
 import csv
 from datetime import date
-import os # <-- Make sure this import is here
+import os
+from whitenoise import WhiteNoise # Import WhiteNoise
 
 app = Flask(__name__)
-app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/') # Add this line
+# Add WhiteNoise wrapper to serve static files in production
+app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/')
+
 app.config['SECRET_KEY'] = 'a_super_secret_key_that_is_hard_to_guess'
 bcrypt = Bcrypt(app)
 
 # --- DATABASE CONFIGURATION ---
-# This code smartly chooses which database to use
-if 'PYTHONANYWHERE_HOSTNAME' in os.environ:
-    # On PythonAnywhere, use SQLite
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fintrack.db')
+# Smartly choose the database based on the environment
+if 'RENDER' in os.environ:
+    # On Render, use SQLite. Render provides a persistent disk for this.
+    db_path = os.path.join('/var/data', 'fintrack.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 else:
     # On your local computer, use PostgreSQL
@@ -72,6 +74,31 @@ def sw():
 @app.route('/')
 def home():
     return render_template('home.html')
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        new_user = User(email=email, password_hash=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect(url_for('login'))
+    return render_template('signup.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        user = User.query.filter_by(email=email).first()
+        if user and bcrypt.check_password_hash(user.password_hash, password):
+            session['user_id'] = user.id
+            return redirect(url_for('dashboard'))
+        else:
+            return "Login Failed. Please check your email and password."
+    return render_template('login.html')
 
 @app.route('/dashboard')
 def dashboard():
@@ -150,31 +177,6 @@ def dashboard():
         total_invested=round(total_invested_value, 2),
         gain_loss=round(overall_gain_loss, 2)
     )
-
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(email=email, password_hash=hashed_password)
-        db.session.add(new_user)
-        db.session.commit()
-        return redirect(url_for('login'))
-    return render_template('signup.html')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        user = User.query.filter_by(email=email).first()
-        if user and bcrypt.check_password_hash(user.password_hash, password):
-            session['user_id'] = user.id
-            return redirect(url_for('dashboard'))
-        else:
-            return "Login Failed. Please check your email and password."
-    return render_template('login.html')
 
 @app.route('/add_asset', methods=['GET', 'POST'])
 def add_asset():
