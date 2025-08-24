@@ -1,3 +1,4 @@
+from whitenoise import WhiteNoise
 import yfinance as yf
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -10,6 +11,7 @@ from datetime import date
 import os # <-- Make sure this import is here
 
 app = Flask(__name__)
+app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/') # Add this line
 app.config['SECRET_KEY'] = 'a_super_secret_key_that_is_hard_to_guess'
 bcrypt = Bcrypt(app)
 
