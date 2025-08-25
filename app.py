@@ -19,12 +19,11 @@ bcrypt = Bcrypt(app)
 
 # --- DATABASE CONFIGURATION ---
 # Smartly choose the database based on the environment
-if 'RENDER' in os.environ:
-    # On Render, use SQLite. Render provides a persistent disk for this.
-    db_path = os.path.join('/var/data', 'fintrack.db')
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+if 'DATABASE_URL' in os.environ:
+    # On Render, use the cloud PostgreSQL database
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 else:
-    # On your local computer, use PostgreSQL
+    # On your local computer, use your local PostgreSQL
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Adhil%401@localhost:5432/fintrack_db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
