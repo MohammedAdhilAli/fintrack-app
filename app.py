@@ -8,7 +8,7 @@ import io
 import csv
 from datetime import date
 import os
-from whitenoise import WhiteNoise # Import WhiteNoise
+from whitenoise import WhiteNoise
 
 app = Flask(__name__)
 # Add WhiteNoise wrapper to serve static files in production
@@ -63,6 +63,7 @@ def get_gold_price():
         return 0
 
 # --- ROUTES ---
+# (All your routes: manifest, sw, home, dashboard, etc. go here)
 @app.route('/manifest.json')
 def manifest():
     return send_from_directory('.', 'manifest.json')
@@ -230,3 +231,8 @@ def delete_asset(asset_id):
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
+
+# --- AUTOMATIC DATABASE CREATION ---
+# This block will run only once when the app starts on the server.
+with app.app_context():
+    db.create_all()
