@@ -9,7 +9,7 @@ import csv
 from datetime import date
 import os
 from whitenoise import WhiteNoise
-from sqlalchemy.exc import IntegrityError # <-- Add this import
+from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/')
@@ -18,12 +18,9 @@ app.config['SECRET_KEY'] = 'a_super_secret_key_that_is_hard_to_guess'
 bcrypt = Bcrypt(app)
 
 # --- DATABASE CONFIGURATION ---
-# Smartly choose the database based on the environment
 if 'DATABASE_URL' in os.environ:
-    # On Render, use the cloud PostgreSQL database from the environment variable
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 else:
-    # On your local computer, use your local PostgreSQL
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Adhil%401@localhost:5432/fintrack_db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -46,10 +43,10 @@ class Asset(db.Model):
     purchase_price = db.Column(db.Float, nullable=False)
     purchase_date = db.Column(db.Date, nullable=False)
 
-# --- HELPER FUNCTION FOR GOLD PRICE (API VERSION) ---
+# --- HELPER FUNCTION FOR GOLD PRICE ---
 def get_gold_price():
     try:
-        api_key = '761313e48ee09b1877b1ccf4819fccde' # Your API Key
+        api_key = '761313e48ee09b1877b1ccf4819fccde'
         url = f"https://api.metalpriceapi.com/v1/latest?api_key={api_key}&base=XAU&currencies=INR"
         response = requests.get(url, timeout=10)
         response.raise_for_status()
@@ -70,34 +67,34 @@ def manifest():
 def sw():
     return send_from_directory('.', 'sw.js')
 
+# --- NEW: SECRET ROUTE TO CREATE DATABASE TABLES ---
+@app.route('/init-db')
+def init_db():
+    with app.app_context():
+        db.create_all()
+    return "Database tables created successfully!"
+
 @app.route('/')
 def home():
     return render_template('home.html')
 
-# --- UPDATED SIGNUP ROUTE ---
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        
-        # Check if a user with this email already exists
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             return "Error: An account with this email already exists. Please go back and login instead."
-
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         new_user = User(email=email, password_hash=hashed_password)
-        
         try:
             db.session.add(new_user)
             db.session.commit()
             return redirect(url_for('login'))
         except IntegrityError:
-            # This is a fallback for rare race conditions
             db.session.rollback()
             return "Error: An account with this email already exists. Please login instead."
-
     return render_template('signup.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -140,7 +137,6 @@ def dashboard():
                         continue 
     except Exception as e:
         print(f"Could not fetch MF NAVs: {e}")
-
     for asset in user_assets:
         is_live_price = False
         invested_value = asset.quantity * asset.purchase_price
@@ -172,7 +168,6 @@ def dashboard():
             interest_earned = principal * interest_rate * years_active
             current_value = principal + interest_earned
             is_live_price = True
-        
         total_portfolio_value += current_value
         total_invested_value += invested_value
         enriched_assets.append({
@@ -243,7 +238,3 @@ def delete_asset(asset_id):
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
-
-# This block will run only once when the app starts on the server.
-with app.app_context():
-    db.create_all()
