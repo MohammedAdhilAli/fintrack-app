@@ -11,7 +11,6 @@ import os
 from whitenoise import WhiteNoise
 
 app = Flask(__name__)
-# Add WhiteNoise wrapper to serve static files in production
 app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/')
 
 app.config['SECRET_KEY'] = 'a_super_secret_key_that_is_hard_to_guess'
@@ -20,7 +19,7 @@ bcrypt = Bcrypt(app)
 # --- DATABASE CONFIGURATION ---
 # Smartly choose the database based on the environment
 if 'DATABASE_URL' in os.environ:
-    # On Render, use the cloud PostgreSQL database
+    # On Render, use the cloud PostgreSQL database from the environment variable
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 else:
     # On your local computer, use your local PostgreSQL
@@ -62,7 +61,6 @@ def get_gold_price():
         return 0
 
 # --- ROUTES ---
-# (All your routes: manifest, sw, home, dashboard, etc. go here)
 @app.route('/manifest.json')
 def manifest():
     return send_from_directory('.', 'manifest.json')
@@ -231,7 +229,6 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
 
-# --- AUTOMATIC DATABASE CREATION ---
 # This block will run only once when the app starts on the server.
 with app.app_context():
     db.create_all()
