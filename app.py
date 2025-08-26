@@ -9,6 +9,7 @@ import csv
 from datetime import date
 import os
 from whitenoise import WhiteNoise
+from sqlalchemy.exc import IntegrityError # <-- Add this import
 
 app = Flask(__name__)
 app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/')
@@ -73,16 +74,30 @@ def sw():
 def home():
     return render_template('home.html')
 
+# --- UPDATED SIGNUP ROUTE ---
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
+        
+        # Check if a user with this email already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return "Error: An account with this email already exists. Please go back and login instead."
+
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         new_user = User(email=email, password_hash=hashed_password)
-        db.session.add(new_user)
-        db.session.commit()
-        return redirect(url_for('login'))
+        
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+            return redirect(url_for('login'))
+        except IntegrityError:
+            # This is a fallback for rare race conditions
+            db.session.rollback()
+            return "Error: An account with this email already exists. Please login instead."
+
     return render_template('signup.html')
 
 @app.route('/login', methods=['GET', 'POST'])
